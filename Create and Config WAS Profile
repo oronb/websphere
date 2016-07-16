@@ -1,0 +1,65 @@
+import sys, os, getopt, logging,smtplib, subprocess
+
+javaVersion='1.7.1_64'
+initialHeapSize='1024'
+maximumHeapSize='2048'
+
+#def check_pre_requirements():
+	#if os.path.exists(PATH): 
+	#	sys.exit("Profile folder exist!")
+
+def usage(exit_value=2):
+    print 'This script create was profile'
+    print 'Usage: config_was_profile.py --profile_name <profile_name> --layer <sl/pl> --env <env_number> '
+    print '--initialHeapSize <initialHeapSize> --maximumHeapSize <maximumHeapSize> --javaVersion <javaVersion>'
+    sys.exit(exit_value)
+
+def create_profile():
+	if os.path.exists(profile_path): 
+		sys.exit("Profile folder exist!")
+	else:
+		subprocess.call([manageprofile, '-create', '-enableAdminSecurity', 'false', '-winserviceCheck', 'true', '-profileName', profile_name, '-profilePath', profile_path])
+		#subprocess.call(['dir', '/b' ,%profile_path,'\config\cells')
+		subprocess.call([startServer, 'server1'])
+def config_profile():
+	if not os.path.exists(profile_path):
+		sys.exit("Profile folder not exist!")
+	else:
+		subprocess.call([wsadmin, '-lang', 'jython', '-f', 'c:\\scripts\\ConfigProfile.py', layer, env, initialHeapSize, maximumHeapSize, javaVersion ]) 
+	
+def main():	
+	create_profile()
+	config_profile()
+	
+if __name__ == '__main__':
+
+    argv = sys.argv[1:]
+
+    try:
+        opts, args = getopt.getopt(argv, "ha:b:c:d:e:f",
+                                   ["profile_name=", "layer=", "env=", "initialHeapSize=", "maximumHeapSize=", "javaVersion="])
+    except getopt.GetoptError:
+        usage()
+
+    for opt, arg in opts:
+        if opt == '-h':
+            usage()
+        elif opt in ("-a", "--profile_name"):
+            profile_name = arg
+        elif opt in ("-b", "--layer"):
+		    layer = arg
+        elif opt in ("-c", "--env"):
+			env = arg
+        elif opt in ("-d", "--initialHeapSize"):
+            profile_name = arg
+        elif opt in ("-e", "--maximumHeapSize"):
+		    maximumHeapSize = arg
+        elif opt in ("-f", "--javaVersion"):		
+			javaVersion = arg
+			
+	wsadmin = "C:\\Program Files (x86)\\IBM\\WebSphere\\AppServer\\profiles\\%s\\bin\\wsadmin.bat" % (profile_name)
+	manageprofile = "C:\\Program Files (x86)\\IBM\\WebSphere\\AppServer\\bin\\manageprofiles.bat"
+	profile_path="C:\\Program Files (x86)\\IBM\\WebSphere\\AppServer\\profiles\\%s" % (profile_name)
+	startServer="C:\\Program Files (x86)\\IBM\\WebSphere\\AppServer\\profiles\\%s\\bin\\startServer.bat" % (profile_name)
+#	check_pre_requirements()
+    main()

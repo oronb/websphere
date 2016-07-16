@@ -12,14 +12,13 @@ nodeName = AdminControl.getAttribute(objNameString, 'nodeName')
 serverName = AdminControl.getAttribute(objNameString, 'name')
 JavaVirtualMachine = AdminConfig.list('JavaVirtualMachine')
 ApplicationServer = AdminConfig.list('ApplicationServer')
-myDirname = os.path.normpath("C:/CONFIGURATION/")
+
 #Insert genericJvmArguments into the profile 
 if layer == "pl": 
-	#generic = "-Dcom.ibm.websphere.webservices.DisableIBMJAXWSEngine=true -Dclient.encoding.override=UTF-8 -DalisPlExternalConfigPath=C:\\CONFIGURATION\PL_ENV%s" % (env)
-	generic = "-Dcom.ibm.websphere.webservices.DisableIBMJAXWSEngine=true -Dclient.encoding.override=UTF-8 -DalisPlExternalConfigPath=%s" % (myDirname)
+	generic = "-Dcom.ibm.websphere.webservices.DisableIBMJAXWSEngine=true -Dclient.encoding.override=UTF-8 -DalisPlExternalConfigPath=C:\\CONFIGURATION\PL_ENV%s" % (env)
 	
 if layer == "sl": 
-	generic = r'-Dcom.ibm.websphere.webservices.DisableIBMJAXWSEngine=true -DalisSlExternalConfigPath=C:\CONFIGURATION\SL_ENV%s  -DalisSlLog4jExternalConfigPath=file:C:\CONFIGURATION\SL_ENV%s' %(env,env) 
+	generic = "-Dcom.ibm.websphere.webservices.DisableIBMJAXWSEngine=true -DalisSlExternalConfigPath=C:\CONFIGURATION\SL_ENV%s  -DalisSlLog4jExternalConfigPath=file:C:\CONFIGURATION\SL_ENV%s" %(env,env) 
 
 #Add genericJvmArguments values
 AdminConfig.modify(JavaVirtualMachine,[['genericJvmArguments', generic]])
@@ -31,10 +30,14 @@ AdminTask.setJVMProperties(['-nodeName', nodeName, '-serverName', serverName, '-
 AdminConfig.create('Classloader',ApplicationServer,'[[mode PARENT_LAST]]')
 
 #Add custom Property
-AdminConfig.create('Property', JavaVirtualMachine, '[[name "ApplicationServerType"] [value "websphere"] [required "false"]]') 
-AdminConfig.create('Property', JavaVirtualMachine, '[[name "ApplicationServerType"] [value "oracle.jdbc.V8Compatible"] [required "true"]]') 
+AdminConfig.create('Property', JavaVirtualMachine, '[[name "websphere"] [value "false"]]') 
+AdminConfig.create('Property', JavaVirtualMachine, '[[name "oracle.jdbc.V8Compatible"] [value "true"]]') 
 
 #Set Java version
 #AdminTask.setServerSDK(['-nodeName', nodeName, '-serverName', serverName ,'-sdkName', javaVersion]) 
-
+AdminApp.uninstall('ivtApp') 
+AdminConfig.save()
+AdminApp.uninstall('query')
+AdminConfig.save()
+AdminApp.uninstall('DefaultApplication')
 AdminConfig.save()

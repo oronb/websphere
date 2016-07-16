@@ -1,5 +1,4 @@
 import sys, os, getopt, logging,smtplib, subprocess
-
 javaVersion='1.7.1_64'
 initialHeapSize='1024'
 maximumHeapSize='2048'
@@ -10,7 +9,7 @@ maximumHeapSize='2048'
 
 def usage(exit_value=2):
     print 'This script create was profile'
-    print 'Usage: config_was_profile.py --profile_name <profile_name> --layer <sl/pl> --env <env_number> '
+    print 'Usage: create_was_profile.py --profile_name <profile_name> --layer <sl/pl> --env <env_number> '
     print '--initialHeapSize <initialHeapSize> --maximumHeapSize <maximumHeapSize> --javaVersion <javaVersion>'
     sys.exit(exit_value)
 
@@ -19,14 +18,32 @@ def create_profile():
 		sys.exit("Profile folder exist!")
 	else:
 		subprocess.call([manageprofile, '-create', '-enableAdminSecurity', 'false', '-winserviceCheck', 'true', '-profileName', profile_name, '-profilePath', profile_path])
-		#subprocess.call(['dir', '/b' ,%profile_path,'\config\cells')
+		cell_path="c:\Program Files (x86)\IBM\WebSphere\AppServer\profiles\%s\config\cells" % (profile_name)
+		cell=subprocess.check_output(["cmd", "/c", "dir", "/b", cell_path]) 
+		s="%s" % (cell)
+		s=s.strip()
+		cell="%s" % (s)
+		node_path="%s\%s\\nodes" % (cell_path,cell)
+ 		node=subprocess.check_output(["cmd", "/c", "dir", "/b", node_path]) 
+		s="%s" % (node)
+		s=s.strip()
+		node="%s" % (s)
+		print "%s" % (cell_path)
+		print "%s" % (node_path)
+		print "%s" % (cell)
+		print "%s" % (node)
+		command1="IBMWAS85Service - %s" % (node)
+		command2="DisplayName=IBM WebSphere Application Server V8.5 - %s" % (profile_name)
+		subprocess.call(["cmd", "/c", "sc", "config", command1, command2 ]) 
 		subprocess.call([startServer, 'server1'])
+		
 def config_profile():
 	if not os.path.exists(profile_path):
 		sys.exit("Profile folder not exist!")
 	else:
-		subprocess.call([wsadmin, '-lang', 'jython', '-f', 'c:\\scripts\\ConfigProfile.py', layer, env, initialHeapSize, maximumHeapSize, javaVersion ]) 
-	
+		subprocess.call([wsadmin, '-lang', 'jython', '-f', 'ConfigProfile.py', layer, env, initialHeapSize, maximumHeapSize, javaVersion ])
+		subprocess.call([stopServer, 'server1'])
+		subprocess.call([startServer, 'server1'])
 def main():	
 	create_profile()
 	config_profile()

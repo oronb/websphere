@@ -78,5 +78,6 @@ if __name__ == '__main__':
 	manageprofile = "C:\\Program Files (x86)\\IBM\\WebSphere\\AppServer\\bin\\manageprofiles.bat"
 	profile_path="C:\\Program Files (x86)\\IBM\\WebSphere\\AppServer\\profiles\\%s" % (profile_name)
 	startServer="C:\\Program Files (x86)\\IBM\\WebSphere\\AppServer\\profiles\\%s\\bin\\startServer.bat" % (profile_name)
+	stopServer="C:\\Program Files (x86)\\IBM\\WebSphere\\AppServer\\profiles\\%s\\bin\\stopServer.bat" % (profile_name)
 #	check_pre_requirements()
     main()

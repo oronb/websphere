@@ -1,0 +1,40 @@
+import sys, os
+
+#javaVersion = '1.7.1_64'
+layer = sys.argv[0]
+env = sys.argv[1]
+initialHeapSize = sys.argv[2]
+maximumHeapSize = sys.argv[3]
+javaVersion = sys.argv[4]
+
+objNameString = AdminControl.completeObjectName('WebSphere:type=Server,*') 
+nodeName = AdminControl.getAttribute(objNameString, 'nodeName')
+serverName = AdminControl.getAttribute(objNameString, 'name')
+JavaVirtualMachine = AdminConfig.list('JavaVirtualMachine')
+ApplicationServer = AdminConfig.list('ApplicationServer')
+myDirname = os.path.normpath("C:/CONFIGURATION/")
+#Insert genericJvmArguments into the profile 
+if layer == "pl": 
+	#generic = "-Dcom.ibm.websphere.webservices.DisableIBMJAXWSEngine=true -Dclient.encoding.override=UTF-8 -DalisPlExternalConfigPath=C:\\CONFIGURATION\PL_ENV%s" % (env)
+	generic = "-Dcom.ibm.websphere.webservices.DisableIBMJAXWSEngine=true -Dclient.encoding.override=UTF-8 -DalisPlExternalConfigPath=%s" % (myDirname)
+	
+if layer == "sl": 
+	generic = r'-Dcom.ibm.websphere.webservices.DisableIBMJAXWSEngine=true -DalisSlExternalConfigPath=C:\CONFIGURATION\SL_ENV%s  -DalisSlLog4jExternalConfigPath=file:C:\CONFIGURATION\SL_ENV%s' %(env,env) 
+
+#Add genericJvmArguments values
+AdminConfig.modify(JavaVirtualMachine,[['genericJvmArguments', generic]])
+
+#Configure initalHeapSize and maximumHeapSize Java memory
+AdminTask.setJVMProperties(['-nodeName', nodeName, '-serverName', serverName, '-initialHeapSize', initialHeapSize, '-maximumHeapSize', maximumHeapSize]) 
+
+#Add Classloader Parent last
+AdminConfig.create('Classloader',ApplicationServer,'[[mode PARENT_LAST]]')
+
+#Add custom Property
+AdminConfig.create('Property', JavaVirtualMachine, '[[name "ApplicationServerType"] [value "websphere"] [required "false"]]') 
+AdminConfig.create('Property', JavaVirtualMachine, '[[name "ApplicationServerType"] [value "oracle.jdbc.V8Compatible"] [required "true"]]') 
+
+#Set Java version
+#AdminTask.setServerSDK(['-nodeName', nodeName, '-serverName', serverName ,'-sdkName', javaVersion]) 
+
+AdminConfig.save()

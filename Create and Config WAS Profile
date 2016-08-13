@@ -1,52 +1,163 @@
 import sys, os, getopt, logging,smtplib, subprocess
-javaVersion='1.7.1_64'
-initialHeapSize='1024'
-maximumHeapSize='2048'
 
-#def check_pre_requirements():
-	#if os.path.exists(PATH): 
-	#	sys.exit("Profile folder exist!")
+########################################################################################################################
+##
+## Global Variables Defenition
+##
+########################################################################################################################
+
+profile_name = ''
+layer = ''
+env = ''
+javaVersion= '1.7.1_64'
+initialHeapSize=''
+maximumHeapSize=''
+choise= ''
+log_name= 'logfile1'
 
 def usage(exit_value=2):
     print 'This script create was profile'
-    print 'Usage: create_was_profile.py --profile_name <profile_name> --layer <sl/pl> --env <env_number> '
-    print '--initialHeapSize <initialHeapSize> --maximumHeapSize <maximumHeapSize> --javaVersion <javaVersion>'
+    print 'Usage: create_was_profile.py --profile_name <profile_name> --layer <sl/pl> --env <env_number> --initialHeapSize <initialHeapSize> --maximumHeapSize <maximumHeapSize> --javaVersion <javaVersion>'
+    print '--profile_name: The Profile Name'
+    print '--layer: the layer of ALIS (SL or PL)'
+    print '--env: The environment number'
+    print '--initialHeapSize: The initialHeapSize of the WAS profile (in Megabytes)'
+    print '--maximumHeapSize: The maximumHeapSize of the WAS profile (in Megabytes)'	
+    print '--javaVersion: WAS Java version'
     sys.exit(exit_value)
+	
+def check_pre_requirements(env):
+	
+    global initialHeapSize
+    global maximumHeapSize
+	
+    logging.info("Checking that the mandatory parameters are not empty")
+    if profile_name == "" or layer == "" or env == "" or javaVersion == "":
+        logging.error("Error: missing mandatory values profile_name, layer(sl/pl) and env")
+        usage()
+	
+	## Add checking that if initialHeapSize and maximumHeapSize are empty add the sl and pl initialHeapSize and maimumHeapSize
+	
+    if layer != 'sl' and layer != 'pl':
+        logging.error("layer has to be sl or pl")
+        usage()	
+
+    if layer == 'sl':	
+		initialHeapSize= '1024'
+		maximumHeapSize= '2048'
+		
+    if layer == 'pl':
+		initialHeapSize= '512'
+		maximumHeapSize= '1024'
+	
+	## Add checking that initialHeapSize and maximumHeapSize are reasnoble sizes
+	
+    print "\nThese are the details of the new profile:" 		
+    print "profile name=%s" % (profile_name)
+    print "profile_path=%s" % (profile_path)
+    print "env=%s" % (env)
+    print "layer=%s" % (layer)
+    print "initialHeapSize=%s" % (initialHeapSize)
+    print "maximumHeapSize=%s" % (maximumHeapSize)	
+    choise=raw_input("Are you sure you want to create this profile? (yes/no) \n")
+	
+    if choise != 'yes':
+		sys.exit(2)
+
+def information_output (information):
+
+	print "%s" % (information)
+	f = open(log_name, 'a+')
+	f.write("%s" % information) 
+	f.close()
 
 def create_profile():
+
 	if os.path.exists(profile_path): 
-		sys.exit("Profile folder exist!")
-	else:
-		subprocess.call([manageprofile, '-create', '-enableAdminSecurity', 'false', '-winserviceCheck', 'true', '-profileName', profile_name, '-profilePath', profile_path])
-		cell_path="c:\Program Files (x86)\IBM\WebSphere\AppServer\profiles\%s\config\cells" % (profile_name)
-		cell=subprocess.check_output(["cmd", "/c", "dir", "/b", cell_path]) 
-		s="%s" % (cell)
-		s=s.strip()
-		cell="%s" % (s)
-		node_path="%s\%s\\nodes" % (cell_path,cell)
- 		node=subprocess.check_output(["cmd", "/c", "dir", "/b", node_path]) 
-		s="%s" % (node)
-		s=s.strip()
-		node="%s" % (s)
-		print "%s" % (cell_path)
-		print "%s" % (node_path)
-		print "%s" % (cell)
-		print "%s" % (node)
-		command1="IBMWAS85Service - %s" % (node)
-		command2="DisplayName=IBM WebSphere Application Server V8.5 - %s" % (profile_name)
-		subprocess.call(["cmd", "/c", "sc", "config", command1, command2 ]) 
-		subprocess.call([startServer, 'server1'])
+		information_output("Error: Profile already exist!")
+		sys.exit(2)
+
+	try:
+		information_output("Info: Start creating profile %s \n" % profile_name)
+		subprocess.check_output([manageprofile, '-create', '-enableAdminSecurity', 'false', '-winserviceCheck', 'true', '-profileName', profile_name, '-profilePath', profile_path])
+		information_output("Info: The profile %s created without errors\n" % profile_name)
+	except subprocess.CalledProcessError as e:
+		information_output("Error: Failed to create profile %s\n" % profile_name)
+		information_output("The Error:\n")
+		information_output(e.output)
+		sys.exit(2)
+
+def stop_server():
+
+	try:
+		information_output("Info: Stopping profile server\n")
+		subprocess.check_output([stopServer, 'server1'])
+		information_output("Info: Profile's %s server stopped successfully\n" % profile_name)
+	except subprocess.CalledProcessError as e:
+		information_output("Error: Failed to stop profile's %s server\n" % profile_name)
+		information_output("Error details:\n")
+		information_output(e.output)
+		
+def start_server():
+
+	try:
+		information_output("Info: Starting profile server\n")
+		subprocess.check_output([startServer, 'server1'])
+		information_output("Info: Profile %s server started successfully\n" % profile_name)
+	except subprocess.CalledProcessError as e:
+		information_output("Error: Failed to start profile's %s server\n" % profile_name)
+		information_output("Error details:\n")
+		information_output(e.output)	
+		
+def change_service_name():
+
+	cell_path="c:\Program Files (x86)\IBM\WebSphere\AppServer\profiles\%s\config\cells" % (profile_name)
+	cell=subprocess.check_output(["cmd", "/c", "dir", "/b", cell_path]) 
+	s="%s" % (cell)
+	s=s.strip()
+	cell="%s" % (s)
+	node_path="%s\%s\\nodes" % (cell_path,cell)
+ 	node=subprocess.check_output(["cmd", "/c", "dir", "/b", node_path]) 
+	s="%s" % (node)
+	s=s.strip()
+	node="%s" % (s)
+	service_name="IBMWAS85Service - %s" % (node)
+	new_service_name="DisplayName=IBM WebSphere Application Server V8.5 - %s" % (profile_name)
+	
+	try:
+		information_output("Info: Starting changing service name\n")
+		subprocess.check_output(["cmd", "/c", "sc", "config", service_name, new_service_name ])
+		information_output("Service name changed to %s\n" % new_service_name)
+		
+	except subprocess.CalledProcessError as e:
+		information_output("Error: failed to change service name to %s\n" % new_service_name)
+		information_output("Error details:\n")
+		information_output(e.output)
 		
 def config_profile():
+
 	if not os.path.exists(profile_path):
-		sys.exit("Profile folder not exist!")
+		information_output("Error: Profile folder is not exist")
+		sys.exit(2)
+		
 	else:
-		subprocess.call([wsadmin, '-lang', 'jython', '-f', 'ConfigProfile.py', layer, env, initialHeapSize, maximumHeapSize, javaVersion ])
-		subprocess.call([stopServer, 'server1'])
-		subprocess.call([startServer, 'server1'])
+		try:
+			information_output("Info: Start config profile\n")
+			subprocess.check_output([wsadmin, '-lang', 'jython', '-f',  "%s\ConfigProfile.py" % config, layer, env, initialHeapSize, maximumHeapSize, javaVersion])
+			information_output("Info: The profile %s was configured successfully\n" % profile_name)
+		except subprocess.CalledProcessError as e:
+			information_output("Error: Failed to config profile %s\n" % profile_name)
+			information_output("Error details:\n")
+			information_output(e.output)
+			
 def main():	
+
 	create_profile()
+	start_server()
+	change_service_name()
 	config_profile()
+	stop_server()
+	start_server()
 	
 if __name__ == '__main__':
 
@@ -54,7 +165,7 @@ if __name__ == '__main__':
 
     try:
         opts, args = getopt.getopt(argv, "ha:b:c:d:e:f",
-                                   ["profile_name=", "layer=", "env=", "initialHeapSize=", "maximumHeapSize=", "javaVersion="])
+								   ["profile_name=", "layer=", "env=", "initialHeapSize=", "maximumHeapSize=", "javaVersion"])
     except getopt.GetoptError:
         usage()
 
@@ -73,11 +184,15 @@ if __name__ == '__main__':
 		    maximumHeapSize = arg
         elif opt in ("-f", "--javaVersion"):		
 			javaVersion = arg
-			
+								
+	#Global vars
+	config=os.path.dirname(os.path.realpath(__file__))
 	wsadmin = "C:\\Program Files (x86)\\IBM\\WebSphere\\AppServer\\profiles\\%s\\bin\\wsadmin.bat" % (profile_name)
 	manageprofile = "C:\\Program Files (x86)\\IBM\\WebSphere\\AppServer\\bin\\manageprofiles.bat"
 	profile_path="C:\\Program Files (x86)\\IBM\\WebSphere\\AppServer\\profiles\\%s" % (profile_name)
 	startServer="C:\\Program Files (x86)\\IBM\\WebSphere\\AppServer\\profiles\\%s\\bin\\startServer.bat" % (profile_name)
 	stopServer="C:\\Program Files (x86)\\IBM\\WebSphere\\AppServer\\profiles\\%s\\bin\\stopServer.bat" % (profile_name)
-#	check_pre_requirements()
+	
+	# call functions
+    check_pre_requirements(env)
     main()

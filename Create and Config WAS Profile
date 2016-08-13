@@ -1,4 +1,5 @@
-import sys, os, getopt, logging,smtplib, subprocess
+import sys, datetime, os, getopt, logging,smtplib, subprocess
+from datetime import datetime
 
 ########################################################################################################################
 ##
@@ -9,11 +10,15 @@ import sys, os, getopt, logging,smtplib, subprocess
 profile_name = ''
 layer = ''
 env = ''
-javaVersion= '1.7.1_64'
-initialHeapSize=''
-maximumHeapSize=''
-choise= ''
-log_name= 'logfile1'
+javaVersion = '1.7.1_64'
+initialHeapSize =''
+maximumHeapSize =''
+choise = ''
+log_name = 'logfile1'
+date = datetime.now()
+date = date.strftime('%m_%d_%Y_%H_%M_%S')
+log_name = "create_profile_%s" % (date)
+
 
 def usage(exit_value=2):
     print 'This script create was profile'
@@ -62,7 +67,7 @@ def check_pre_requirements(env):
     choise=raw_input("Are you sure you want to create this profile? (yes/no) \n")
 	
     if choise != 'yes':
-	sys.exit(2)
+		sys.exit(2)
 
 def information_output (information):
 
@@ -92,7 +97,7 @@ def stop_server():
 	try:
 		information_output("Info: Stopping profile server\n")
 		subprocess.check_output([stopServer, 'server1'])
-		information_output("Info: Profile's %s server stopped successfully\n" % profile_name)
+		information_output("Info: Profile's %s server stopped without errors\n" % profile_name)
 	except subprocess.CalledProcessError as e:
 		information_output("Error: Failed to stop profile's %s server\n" % profile_name)
 		information_output("Error details:\n")
@@ -103,7 +108,7 @@ def start_server():
 	try:
 		information_output("Info: Starting profile server\n")
 		subprocess.check_output([startServer, 'server1'])
-		information_output("Info: Profile %s server started successfully\n" % profile_name)
+		information_output("Info: Profile %s server started without errors\n" % profile_name)
 	except subprocess.CalledProcessError as e:
 		information_output("Error: Failed to start profile's %s server\n" % profile_name)
 		information_output("Error details:\n")
@@ -144,7 +149,7 @@ def config_profile():
 		try:
 			information_output("Info: Start config profile\n")
 			subprocess.check_output([wsadmin, '-lang', 'jython', '-f',  "%s\ConfigProfile.py" % config, layer, env, initialHeapSize, maximumHeapSize, javaVersion])
-			information_output("Info: The profile %s was configured successfully\n" % profile_name)
+			information_output("Info: The profile %s was configured without errors\n" % profile_name)
 		except subprocess.CalledProcessError as e:
 			information_output("Error: Failed to config profile %s\n" % profile_name)
 			information_output("Error details:\n")

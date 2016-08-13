@@ -62,7 +62,7 @@ def check_pre_requirements(env):
     choise=raw_input("Are you sure you want to create this profile? (yes/no) \n")
 	
     if choise != 'yes':
-		sys.exit(2)
+	sys.exit(2)
 
 def information_output (information):
 
